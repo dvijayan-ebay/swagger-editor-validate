@@ -2,6 +2,7 @@ const fs = require('fs');
 const path = require('path');
 const puppeteer = require('puppeteer');
 const core = require('@actions/core');
+const https = require("https");
 
 const shouldIgnoreError = (error) => {
   if (process.env.IGNORE_ERROR) {
@@ -67,9 +68,30 @@ const parseErrors = async (page) => {
     process.env.GITHUB_WORKSPACE,
     process.env.DEFINITION_FILE
   );
+   const definitionURLPath = path.join(
+    process.env.DEFINITION_URL
+  );
 
   try {
+    if(definitionFilePath && definitionFilePath.length>0)
     const definition = fs.readFileSync(definitionFilePath).toString();
+    else
+    {
+     var definition = '';
+      https.get(definitionURLPath).on('response', function (response) {
+        var i = 0;
+        response.on('data', function (chunk) {
+            i++;
+            body += chunk;
+            console.log('BODY Part: ' + i);
+        });
+        response.on('end', function () {
+            console.log(body);
+            console.log('Finished');
+        });
+    });
+      
+    }
 
     await page.goto(process.env.SWAGGER_EDITOR_URL);
     await page.waitForSelector('.info .main .title');
